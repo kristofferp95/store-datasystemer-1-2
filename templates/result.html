@@ -2,20 +2,38 @@
 <html>
 <head>
     <title>Thresholding Resultater</title>
+    <style>
+        .image-pair {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 20px;
+        }
+        .image-pair > div {
+            flex: 1;
+            text-align: center; 
+        }
+        img {
+            max-width: 100%; 
+            height: auto; 
+        }
+    </style>
 </head>
 <body>
-    <h1>Thresholding Resultater</h1>
-    
-    {% for original, thresholded in pairs %}
-    <h2>Originalt bilde</h2>
-    <img src="{{ url_for('static', filename=original) }}" alt="Originalt bilde">
-    
-    <h2>Thresholded bilde</h2>
-    <img src="{{ url_for('static', filename=thresholded) }}" alt="Thresholded bilde">
-    <br><br>
+    <h1>Resultater</h1>
+
+    {% for paths in image_paths %}
+    <div class="image-pair">
+        <div class="original-image">
+            <h2>Originalt bilde</h2>
+            <img src="{{ url_for('static', filename='uploads/' + paths.original) }}" alt="Originalt bilde">
+        </div>
+        <div class="thresholded-image">
+            <h2>Prosessert bilde</h2>
+            <img src="{{ url_for('static', filename='uploads/' + paths.processed) }}" alt="Prosessert bilde">
+        </div>
+    </div>
     {% endfor %}
     
-    <a href="/">Tilbake til opplastingssiden</a>
 </body>
 </html>
 

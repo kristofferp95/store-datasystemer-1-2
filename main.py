@@ -1,6 +1,7 @@
-from flask import Flask, render_template, request, redirect, url_for
+from flask import Flask, render_template, request, redirect
 import cv2
 import os
+import numpy as np
 from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
@@ -16,40 +17,75 @@ def apply_thresholding(image):
     _, thresh_image = cv2.threshold(gray_image, 127, 255, cv2.THRESH_BINARY)
     return thresh_image
 
-@app.route('/threshold', methods=['GET', 'POST'])
+@app.route('/region-growing', methods=['GET'])
+def region_growing():
+    return render_template('region_growing.html')
+
+# Enkel Watershed-prosesseringsfunksjon
+def apply_watershed(image):
+    # Konverter bildet til gråtone
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    # Bruk en binær terskel
+    _, thresh = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
+    # Fjern støy
+    kernel = np.ones((3,3), np.uint8)
+    opening = cv2.morphologyEx(thresh, cv2.MORPH_OPEN, kernel, iterations=2)
+    # Finn bakgrunnsområdet
+    sure_bg = cv2.dilate(opening, kernel, iterations=3)
+    # Finn forgrunnsområdet
+    dist_transform = cv2.distanceTransform(opening, cv2.DIST_L2, 5)
+    _, sure_fg = cv2.threshold(dist_transform, 0.7*dist_transform.max(), 255, 0)
+    # Finn ukjent område
+    sure_fg = np.uint8(sure_fg)
+    unknown = cv2.subtract(sure_bg, sure_fg)
+    # Merk forgrunnsområdet
+    _, markers = cv2.connectedComponents(sure_fg)
+    # Legg til 1 til alle merkene slik at sikker bakgrunn ikke er 0, men 1
+    markers = markers + 1
+    # Merk ukjent område med 0
+    markers[unknown == 255] = 0
+    # Bruk Watershed
+    markers = cv2.watershed(image, markers)
+    image[markers == -1] = [255,0,0]  # Markere grensene med rødt
+    return image
+
+@app.route('/', methods=['GET', 'POST'])
 def upload_file():
     if request.method == 'POST':
-        if 'image' not in request.files:
-            return redirect(request.url)
-        
+        processing_method = request.form.get('processing_method')
+        image_paths = []
+
         files = request.files.getlist('image')
         if not files:
             return redirect(request.url)
 
-        original_images = []
-        thresholded_images = []
-
         for file in files:
             if file and allowed_file(file.filename):
                 filename = secure_filename(file.filename)
-                file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-                file.save(file_path)
+                original_file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+                file.save(original_file_path)
 
-                image = cv2.imread(file_path)
-                thresholded_image = apply_thresholding(image)
+                image = cv2.imread(original_file_path)
+                if processing_method == 'watershed':
+                    processed_image = apply_watershed(image)
+                else:
+                    processed_image = apply_thresholding(image)
 
-                original_image_path = os.path.join(app.config['UPLOAD_FOLDER'], 'original_' + filename)
-                thresholded_image_path = os.path.join(app.config['UPLOAD_FOLDER'], 'thresholded_' + filename)
-                cv2.imwrite(original_image_path, image)
-                cv2.imwrite(thresholded_image_path, thresholded_image)
+                processed_filename = processing_method + '_' + filename
+                processed_image_path = os.path.join(app.config['UPLOAD_FOLDER'], processed_filename)
+                cv2.imwrite(processed_image_path, processed_image)
 
-                original_images.append(original_image_path)
-                thresholded_images.append(thresholded_image_path)
+                image_paths.append({
+                    'original': filename,
+                    'processed': processed_filename,
+                    'method': processing_method
+                })
 
-        pairs = zip(original_images, thresholded_images)
-        return render_template('result.html', pairs=pairs)
+        return render_template('result.html', image_paths=image_paths)
     
     return render_template('upload.html')
+
+
 
 if __name__ == '__main__':
     os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)

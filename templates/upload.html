@@ -1,14 +1,21 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Bilde Thresholding</title>
+    <title>Bildebehandling</title>
 </head>
 <body>
-    <h1>Last opp et bilde for Thresholding</h1>
-    <form action="/threshold" method="POST" enctype="multipart/form-data">
-        <input type="file" name="image" accept="image/*" required>
+    <h1>Last opp bilder for bildebehandling</h1>
+    <form action="/" method="POST" enctype="multipart/form-data">
+        <input type="file" name="image" accept="image/*" multiple required>
         <br><br>
-        <input type="submit" value="Utfør Thresholding">
+        <select name="processing_method">
+            <option value="thresholding">Thresholding</option>
+            <option value="watershed">Watershed</option>
+        </select>
+        <br><br>
+        <input type="submit" value="Utfør Prosessering">
+        <a href="/region-growing">Region Growing</a>
     </form>
 </body>
 </html>
+

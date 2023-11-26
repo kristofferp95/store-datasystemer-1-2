@@ -1,0 +1,78 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Region Growing</title>
+</head>
+<body>
+    <input type="file" id="imageUpload" accept="image/*">
+    <canvas id="canvas"></canvas>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        let imgData;
+        let originalData;
+
+        document.getElementById('imageUpload').addEventListener('change', handleImageUpload);
+
+        function handleImageUpload(e) {
+            const file = e.target.files[0];
+            const img = new Image();
+            img.src = URL.createObjectURL(file);
+            img.onload = () => {
+                canvas.width = img.width;
+                canvas.height = img.height;
+                ctx.drawImage(img, 0, 0);
+                originalData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                canvas.onclick = (event) => performRegionGrowing(event, img);
+            };
+        }
+
+        function performRegionGrowing(event, img) {
+            const x = event.clientX - canvas.getBoundingClientRect().left;
+            const y = event.clientY - canvas.getBoundingClientRect().top;
+            const threshold = 30; // Adjust as needed
+            const stack = [[x, y]];
+            const seen = {};
+
+            imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const seedColor = getPixelColor(x, y, originalData);
+
+            while (stack.length > 0) {
+                const [px, py] = stack.pop();
+                const key = `${px},${py}`;
+                if (seen[key]) continue;
+                seen[key] = true;
+
+                const currentColor = getPixelColor(px, py, originalData);
+                const colorDiff = getColorDifference(seedColor, currentColor);
+
+                if (colorDiff < threshold) {
+                    setPixelColor(px, py, {r: 255, g: 0, b: 0}, imgData); // highlight color
+                    stack.push([px + 1, py], [px - 1, py], [px, py + 1], [px, py - 1]);
+                }
+            }
+            ctx.putImageData(imgData, 0, 0);
+        }
+
+        function getPixelColor(x, y, data) {
+            const i = (y * data.width + x) * 4;
+            return { r: data.data[i], g: data.data[i + 1], b: data.data[i + 2] };
+        }
+
+        function setPixelColor(x, y, color, data) {
+            const i = (y * data.width + x) * 4;
+            data.data[i] = color.r;
+            data.data[i + 1] = color.g;
+            data.data[i + 2] = color.b;
+        }
+
+        function getColorDifference(color1, color2) {
+            return Math.abs(color1.r - color2.r) + Math.abs(color1.g - color2.g) + Math.abs(color1.b - color2.b);
+        }
+    </script>
+</body>
+</html>
