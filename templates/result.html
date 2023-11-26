@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Thresholding Resultater</title>
+</head>
+<body>
+    <h1>Thresholding Resultater</h1>
+    
+    {% for original, thresholded in pairs %}
+    <h2>Originalt bilde</h2>
+    <img src="{{ url_for('static', filename=original) }}" alt="Originalt bilde">
+    
+    <h2>Thresholded bilde</h2>
+    <img src="{{ url_for('static', filename=thresholded) }}" alt="Thresholded bilde">
+    <br><br>
+    {% endfor %}
+    
+    <a href="/">Tilbake til opplastingssiden</a>
+</body>
+</html>
+
