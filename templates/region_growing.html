@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -7,17 +6,21 @@
     <title>Region Growing</title>
 </head>
 <body>
+    <!-- Input element for uploading an image -->
     <input type="file" id="imageUpload" accept="image/*">
+    <!-- Canvas element for displaying the image -->
     <canvas id="canvas"></canvas>
 
     <script>
         const canvas = document.getElementById('canvas');
         const ctx = canvas.getContext('2d');
-        let imgData;
-        let originalData;
+        let imgData;  // Stores the image data after region growing
+        let originalData;  // Stores the original image data
 
+        // Event listener for the file input element
         document.getElementById('imageUpload').addEventListener('change', handleImageUpload);
 
+        // Function to handle image upload
         function handleImageUpload(e) {
             const file = e.target.files[0];
             const img = new Image();
@@ -31,12 +34,13 @@
             };
         }
 
+        // Function to perform region growing
         function performRegionGrowing(event, img) {
             const x = event.clientX - canvas.getBoundingClientRect().left;
             const y = event.clientY - canvas.getBoundingClientRect().top;
             const threshold = 30; // Adjust as needed
-            const stack = [[x, y]];
-            const seen = {};
+            const stack = [[x, y]]; // Stack for pixel traversal
+            const seen = {}; // Object to keep track of visited pixels
 
             imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
             const seedColor = getPixelColor(x, y, originalData);
@@ -51,18 +55,20 @@
                 const colorDiff = getColorDifference(seedColor, currentColor);
 
                 if (colorDiff < threshold) {
-                    setPixelColor(px, py, {r: 255, g: 0, b: 0}, imgData); // highlight color
+                    setPixelColor(px, py, {r: 255, g: 0, b: 0}, imgData); // Highlight color
                     stack.push([px + 1, py], [px - 1, py], [px, py + 1], [px, py - 1]);
                 }
             }
-            ctx.putImageData(imgData, 0, 0);
+            ctx.putImageData(imgData, 0, 0); // Update the canvas with the segmented image
         }
 
+        // Function to get the color of a pixel from image data
         function getPixelColor(x, y, data) {
             const i = (y * data.width + x) * 4;
             return { r: data.data[i], g: data.data[i + 1], b: data.data[i + 2] };
         }
 
+        // Function to set the color of a pixel in image data
         function setPixelColor(x, y, color, data) {
             const i = (y * data.width + x) * 4;
             data.data[i] = color.r;
@@ -70,9 +76,11 @@
             data.data[i + 2] = color.b;
         }
 
+        // Function to calculate the color difference between two colors
         function getColorDifference(color1, color2) {
             return Math.abs(color1.r - color2.r) + Math.abs(color1.g - color2.g) + Math.abs(color1.b - color2.b);
         }
     </script>
 </body>
 </html>
+
